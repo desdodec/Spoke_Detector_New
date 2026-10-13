@@ -143,7 +143,9 @@ function renderConstellation(){
   const mx=mean(ptsRaw.map(p=>p.x)),my=mean(ptsRaw.map(p=>p.y)),sx=quantile(ptsRaw.map(p=>Math.abs(p.x-mx)),.96)||1,sy=quantile(ptsRaw.map(p=>Math.abs(p.y-my)),.96)||1;
   const pts=ptsRaw.map((p,i)=>({x:600+(p.x-mx)/sx*340,y:615+(p.y-my)/sy*340,j:p.j,t:i/(ptsRaw.length-1||1)}));
   for(let i=1;i<pts.length;i++){
-    const p=pts[i-1],q=pts[i];svg.appendChild(svgEl('line',{x1:p.x,y1:p.y,x2:q.x,y2:q.y,stroke:paletteColor(colorScalar({journey:q.j,strand:q.t,time:q.t,amp:.5})),'stroke-width':String(state.strokeWidth*.55),opacity:'.16'}));
+    const p=pts[i-1],q=pts[i];
+    if(p.j!==q.j)continue; // Separate journeys: never invent a connecting trajectory.
+    svg.appendChild(svgEl('line',{x1:p.x,y1:p.y,x2:q.x,y2:q.y,stroke:paletteColor(colorScalar({journey:q.j,strand:q.t,time:q.t,amp:.5})),'stroke-width':String(state.strokeWidth*.55),opacity:'.16'}));
   }
   pts.forEach((p,i)=>{const rr=1.2+seeded(i+700)*3.8;svg.appendChild(svgEl('circle',{cx:p.x,cy:p.y,r:rr.toFixed(2),fill:paletteColor(colorScalar({journey:p.j,strand:p.t,time:p.t,amp:rr/5})) ,opacity:'.82',filter:'url(#glow)'}));});
   addSignature(svg,'Tempo Constellation');

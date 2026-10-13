@@ -6,159 +6,142 @@
   <title>Spoke Detector — Data Art Studio</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Manrope:wght@500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Manrope:wght@500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css" />
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
 <body>
   <div class="app-shell">
     <aside class="control-panel">
-      <div class="brand-block">
+      <header class="brand-block">
         <div class="eyebrow">SPOKE DETECTOR</div>
         <h1>Data Art Studio</h1>
-        <p>Turn one person's real handlebar motion into a unique, printable portrait.</p>
-      </div>
+        <p>Make a unique, printable portrait from a person's real handlebar motion.</p>
+      </header>
 
       <section class="panel-section upload-section">
         <label class="file-drop" id="fileDrop">
           <input id="fileInput" type="file" accept=".xlsx,.xls,.csv" />
           <span class="drop-kicker">LOAD RECORDING</span>
           <strong id="fileLabel">Choose phyphox XLSX or CSV</strong>
-          <span>Nothing leaves this browser.</span>
+          <span>Processed locally in this browser.</span>
         </label>
       </section>
 
-      <section class="panel-section" id="selectionPanel">
-        <div class="section-heading">
-          <span>01</span>
-          <h2>Select the walk</h2>
-        </div>
-
+      <section class="panel-section">
+        <div class="section-heading"><span>01</span><h2>Select the two journeys</h2></div>
         <div class="timeline-wrap">
-          <svg id="timeline" viewBox="0 0 600 120" preserveAspectRatio="none" aria-label="Recording timeline"></svg>
+          <svg id="timeline" viewBox="0 0 700 150" preserveAspectRatio="none" aria-label="Recording timeline"></svg>
           <div class="timeline-legend">
-            <span><i class="dot out-dot"></i> outbound</span>
-            <span><i class="dot gap-dot"></i> turn gap</span>
-            <span><i class="dot ret-dot"></i> return</span>
+            <span><i class="dot out-dot"></i> outbound window</span>
+            <span><i class="dot ret-dot"></i> return window</span>
+            <span><i class="dot marker-dot"></i> detected markers</span>
           </div>
         </div>
 
         <label class="control-row">
-          <div><span>Midpoint</span><output id="midpointOut">—</output></div>
-          <input id="midpoint" type="range" min="0" max="100" step="0.1" value="50" />
+          <div><span>Outbound midpoint</span><output id="outMidOut">—</output></div>
+          <input id="outMid" type="range" min="0" max="100" step="0.1" value="25" />
         </label>
-
         <label class="control-row">
-          <div><span>Seconds each side</span><output id="windowOut">20 s</output></div>
-          <input id="windowSeconds" type="range" min="8" max="30" step="1" value="20" />
+          <div><span>Return midpoint</span><output id="retMidOut">—</output></div>
+          <input id="retMid" type="range" min="0" max="100" step="0.1" value="85" />
         </label>
-
         <label class="control-row">
-          <div><span>Turn exclusion</span><output id="gapOut">5 s</output></div>
-          <input id="turnGap" type="range" min="2" max="10" step="0.5" value="5" />
+          <div><span>Window length</span><output id="windowOut">15 s</output></div>
+          <input id="windowSeconds" type="range" min="6" max="30" step="1" value="15" />
         </label>
-
-        <button class="secondary-button" id="autoMidpoint">Re-detect midpoint</button>
+        <button class="secondary-button" id="autoJourneys">Auto-detect journeys</button>
+        <p class="helper-text" id="markerReadout">Start, turn and end markers will appear here when detected.</p>
       </section>
 
       <section class="panel-section">
-        <div class="section-heading">
-          <span>02</span>
-          <h2>Choose a portrait</h2>
-        </div>
+        <div class="section-heading"><span>02</span><h2>Choose a portrait</h2></div>
         <div id="styleGallery" class="style-gallery"></div>
       </section>
 
       <section class="panel-section">
-        <div class="section-heading">
-          <span>03</span>
-          <h2>Tune the piece</h2>
+        <div class="section-heading"><span>03</span><h2>Colour system</h2></div>
+        <div id="paletteGallery" class="palette-gallery"></div>
+
+        <label class="select-row">
+          <span>Colour mapping</span>
+          <select id="colorMode">
+            <option value="time">Time through each journey</option>
+            <option value="amplitude">Motion intensity</option>
+            <option value="strand">Layer / strand position</option>
+            <option value="journey">Journey split</option>
+          </select>
+        </label>
+
+        <div class="custom-palette-label">Custom palette</div>
+        <div class="color-rack" id="colorRack">
+          <input class="palette-color" type="color" value="#25d9ff" aria-label="Palette colour 1" />
+          <input class="palette-color" type="color" value="#6c63ff" aria-label="Palette colour 2" />
+          <input class="palette-color" type="color" value="#d44cff" aria-label="Palette colour 3" />
+          <input class="palette-color" type="color" value="#ff5b65" aria-label="Palette colour 4" />
+          <input class="palette-color" type="color" value="#ffb13b" aria-label="Palette colour 5" />
         </div>
+      </section>
 
-        <div class="two-col-controls">
-          <label>
-            <span>Outbound</span>
-            <input id="outColor" type="color" value="#2fa8ff" />
-          </label>
-          <label>
-            <span>Return</span>
-            <input id="retColor" type="color" value="#ff8a1f" />
-          </label>
+      <section class="panel-section">
+        <div class="section-heading"><span>04</span><h2>Tune the piece</h2></div>
+        <label class="control-row compact">
+          <div><span>Line density</span><output id="densityOut">48</output></div>
+          <input id="density" type="range" min="12" max="100" step="1" value="48" />
+        </label>
+        <label class="control-row compact">
+          <div><span>Stroke</span><output id="strokeOut">1.2</output></div>
+          <input id="strokeWidth" type="range" min="0.35" max="3.5" step="0.05" value="1.2" />
+        </label>
+        <label class="control-row compact">
+          <div><span>Glow</span><output id="glowOut">34%</output></div>
+          <input id="glow" type="range" min="0" max="100" step="1" value="34" />
+        </label>
+        <label class="control-row compact">
+          <div><span>Complexity</span><output id="complexityOut">68%</output></div>
+          <input id="complexity" type="range" min="20" max="100" step="1" value="68" />
+        </label>
+        <label class="control-row compact">
+          <div><span>Symmetry</span><output id="symmetryOut">18%</output></div>
+          <input id="symmetry" type="range" min="0" max="100" step="1" value="18" />
+        </label>
+        <div class="toggle-stack">
+          <label class="toggle-row"><span>Dark ground</span><input id="darkGround" type="checkbox" checked /></label>
+          <label class="toggle-row"><span>Show data signature</span><input id="showSignature" type="checkbox" checked /></label>
         </div>
-
-        <label class="control-row compact">
-          <div><span>Line density</span><output id="densityOut">42</output></div>
-          <input id="density" type="range" min="12" max="90" step="1" value="42" />
-        </label>
-
-        <label class="control-row compact">
-          <div><span>Stroke</span><output id="strokeOut">1.3</output></div>
-          <input id="strokeWidth" type="range" min="0.4" max="3.5" step="0.1" value="1.3" />
-        </label>
-
-        <label class="control-row compact">
-          <div><span>Glow</span><output id="glowOut">38%</output></div>
-          <input id="glow" type="range" min="0" max="100" step="1" value="38" />
-        </label>
-
-        <label class="control-row compact">
-          <div><span>Complexity</span><output id="complexityOut">64%</output></div>
-          <input id="complexity" type="range" min="20" max="100" step="1" value="64" />
-        </label>
-
-        <label class="toggle-row">
-          <span>Dark ground</span>
-          <input id="darkGround" type="checkbox" checked />
-        </label>
-
-        <label class="toggle-row">
-          <span>Show signature</span>
-          <input id="showSignature" type="checkbox" checked />
-        </label>
+        <button class="secondary-button" id="variation">New variation</button>
       </section>
 
       <section class="panel-section export-section">
-        <div class="section-heading">
-          <span>04</span>
-          <h2>Export</h2>
-        </div>
+        <div class="section-heading"><span>05</span><h2>Export</h2></div>
         <div class="export-grid">
-          <button id="exportSvg" class="primary-button">SVG</button>
-          <button id="exportPng" class="primary-button">PNG</button>
+          <button id="exportSvg" class="primary-button">Export SVG</button>
+          <button id="exportPng" class="primary-button">Export PNG</button>
         </div>
-        <p class="export-note">SVG stays vector-clean for print. PNG exports at 3200 × 3200 px.</p>
+        <p class="export-note">SVG stays vector-clean for screen print and large-format work. PNG exports at 3200 × 3200 px.</p>
       </section>
     </aside>
 
     <main class="studio-stage">
       <div class="stage-toolbar">
-        <div>
-          <span class="status-dot" id="statusDot"></span>
-          <span id="statusText">Load a recording to begin</span>
-        </div>
-        <div id="selectionReadout">20 s + 20 s</div>
+        <div><span class="status-dot" id="statusDot"></span><span id="statusText">Load a recording to begin</span></div>
+        <div id="selectionReadout">15 s outbound · 15 s return</div>
       </div>
-
       <div class="artboard-wrap">
         <svg id="artboard" viewBox="0 0 1200 1200" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Generated data artwork">
           <rect width="1200" height="1200" fill="#07090d" />
-          <g opacity="0.9">
-            <circle cx="600" cy="600" r="170" fill="none" stroke="#17202d" stroke-width="1" />
-            <circle cx="600" cy="600" r="260" fill="none" stroke="#17202d" stroke-width="1" />
-            <circle cx="600" cy="600" r="350" fill="none" stroke="#17202d" stroke-width="1" />
-          </g>
+          <circle cx="600" cy="600" r="230" fill="none" stroke="#18202b" />
           <text x="600" y="575" text-anchor="middle" fill="#aab4c2" font-family="Inter, sans-serif" font-size="26">Load a phyphox recording</text>
-          <text x="600" y="615" text-anchor="middle" fill="#5f6b79" font-family="Inter, sans-serif" font-size="16">Your artwork will be generated from the measured samples only</text>
+          <text x="600" y="615" text-anchor="middle" fill="#5f6b79" font-family="Inter, sans-serif" font-size="16">The visual geometry will come from measured samples only</text>
         </svg>
       </div>
-
-      <div class="truth-strip">
+      <footer class="truth-strip">
         <strong>DATA-TRUE</strong>
-        <span>Every visible form is computed from the selected samples. No image-generation model is used.</span>
-      </div>
+        <span>Geometry and colour are computed from the selected sensor samples. No image-generation model is used.</span>
+      </footer>
     </main>
   </div>
-
   <script src="app.js"></script>
 </body>
 </html>

@@ -67,7 +67,7 @@ function detectMarkers(){
   const starts=candidates.filter(c=>c.center<state.duration*.2); const start=(starts.length?starts:candidates.slice(0,2)).sort((a,b)=>score(b)-score(a))[0];
   const middlePool=candidates.filter(c=>c.center>Math.max(state.duration*.2,start.end+12)&&c.center<state.duration*.62);
   const turn=(middlePool.length?middlePool:candidates.filter(c=>c.center>start.end+10)).sort((a,b)=>score(b)-score(a))[0];
-  const endPool=candidates.filter(c=>c.center>turn.end+20&&c.center<state.duration*.86);
+  const endPool=candidates.filter(c=>c.center>turn.end+20&&c.center<=state.duration);
   const end=(endPool.length?endPool:candidates.filter(c=>c.center>turn.end+15)).sort((a,b)=>score(b)-score(a))[0];
   if(!start||!turn||!end)return null;
   return {start,turn,end,candidates};

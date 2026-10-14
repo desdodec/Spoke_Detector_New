@@ -1,6 +1,5 @@
-// Spoke Detector — compact curated palette system.
-// Six deliberate palettes replace the large menu: two dark-ground, two light-ground,
-// two versatile. All remain deterministic presentation choices around measured geometry.
+// Spoke Detector — curated palette system for dark, light and neutral grounds.
+// A broader but still deliberate set: enough participant choice without an uncontrolled colour catalogue.
 (() => {
   const CURATED = {
     polarGlow: {
@@ -11,6 +10,19 @@
       name:'Nocturne Duet', ground:'dark',
       colors:['#5DE6D7','#2EB9D1','#6673D8','#BD4AC8','#F36BAF']
     },
+    auroraFlame: {
+      name:'Aurora Flame', ground:'dark',
+      colors:['#72F7E2','#35D0D4','#5578F0','#E04CD4','#FF7A67']
+    },
+    ultravioletCoral: {
+      name:'Ultraviolet Coral', ground:'dark',
+      colors:['#5AE8FF','#5176E8','#8758D4','#DB4BA7','#FF755F']
+    },
+    emeraldRose: {
+      name:'Emerald Rose', ground:'dark',
+      colors:['#68F0C6','#27BFA4','#407A9C','#C04C93','#FF6A9D']
+    },
+
     inkBlush: {
       name:'Ink & Blush', ground:'light',
       colors:['#086879','#165B78','#46507B','#8B315F','#B52E62']
@@ -19,6 +31,15 @@
       name:'Graphite Prism', ground:'light',
       colors:['#26434D','#38586A','#515675','#704267','#913A5A']
     },
+    cobaltEmber: {
+      name:'Cobalt Ember', ground:'light',
+      colors:['#174D73','#215D9A','#5D4A86','#9D3F61','#B44E32']
+    },
+    botanicalPlum: {
+      name:'Botanical Plum', ground:'light',
+      colors:['#24594E','#2E7564','#506B69','#794665','#923B62']
+    },
+
     signalDuet: {
       name:'Signal Duet', ground:'both',
       colors:['#00A9C6','#297AB8','#655DB7','#C5428B','#E85279']
@@ -26,10 +47,13 @@
     studioAccent: {
       name:'Studio Accent', ground:'both',
       colors:['#39747A','#4D7183','#626581','#7F556E','#A34F69']
+    },
+    tealCopper: {
+      name:'Teal / Copper', ground:'both',
+      colors:['#168C92','#2F798A','#596B7D','#A65A4C','#C56D43']
     }
   };
 
-  // Replace the sprawling palette catalogue rather than adding yet more choices.
   Object.keys(PALETTES).forEach(k=>delete PALETTES[k]);
   Object.assign(PALETTES,CURATED);
   if(!PALETTES[state.palette]){
@@ -52,7 +76,7 @@
   if(oldGallery&&!document.getElementById('paletteBalanceNote')){
     const note=document.createElement('p');
     note.id='paletteBalanceNote';note.className='palette-balance-note';
-    note.innerHTML='<strong>Six curated palettes.</strong> Dark palettes maximise luminous depth; Light palettes hold contrast on white/cream; Both are designed to travel between grounds.';
+    note.innerHTML='<strong>12 curated palettes.</strong> Dark choices maximise luminous depth; Light choices retain contrast on white/cream; Both are designed to travel between grounds.';
     oldGallery.insertAdjacentElement('afterend',note);
   }
 

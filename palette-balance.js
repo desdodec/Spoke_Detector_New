@@ -1,51 +1,44 @@
-// Spoke Detector — balanced palette library for dark and light grounds.
-// Colour changes remain user-selected and become the actual exported artwork colours.
+// Spoke Detector — compact curated palette system.
+// Six deliberate palettes replace the large menu: two dark-ground, two light-ground,
+// two versatile. All remain deterministic presentation choices around measured geometry.
 (() => {
-  const LIGHT_PALETTES = {
-    inkpop: {
-      name: 'Ink Pop',
-      ground: 'light',
-      colors: ['#12263A','#0B6E75','#2E5AAC','#9A3E78','#D1495B']
+  const CURATED = {
+    polarGlow: {
+      name:'Polar Glow', ground:'dark',
+      colors:['#79F3FF','#38CFEA','#7897FF','#D85BEB','#FF62C5']
     },
-    cobaltHeat: {
-      name: 'Cobalt Heat',
-      ground: 'light',
-      colors: ['#12355B','#246EB9','#6C3FA0','#C43D58','#C96A16']
+    nocturneDuet: {
+      name:'Nocturne Duet', ground:'dark',
+      colors:['#5DE6D7','#2EB9D1','#6673D8','#BD4AC8','#F36BAF']
     },
-    botanical: {
-      name: 'Botanical Ink',
-      ground: 'light',
-      colors: ['#16302B','#245C45','#3C7A57','#8F3F35','#7A4E2D']
-    },
-    plumGold: {
-      name: 'Plum / Gold',
-      ground: 'light',
-      colors: ['#2B193D','#5C356E','#8F3552','#B35C25','#876A16']
-    },
-    signalInk: {
-      name: 'Signal Ink',
-      ground: 'light',
-      colors: ['#14213D','#004E89','#5B2A86','#A52A3A','#A95F00']
+    inkBlush: {
+      name:'Ink & Blush', ground:'light',
+      colors:['#086879','#165B78','#46507B','#8B315F','#B52E62']
     },
     graphitePrism: {
-      name: 'Graphite Prism',
-      ground: 'light',
-      colors: ['#20242B','#394867','#2F6690','#65418A','#963C5F']
+      name:'Graphite Prism', ground:'light',
+      colors:['#26434D','#38586A','#515675','#704267','#913A5A']
+    },
+    signalDuet: {
+      name:'Signal Duet', ground:'both',
+      colors:['#00A9C6','#297AB8','#655DB7','#C5428B','#E85279']
+    },
+    studioAccent: {
+      name:'Studio Accent', ground:'both',
+      colors:['#39747A','#4D7183','#626581','#7F556E','#A34F69']
     }
   };
 
-  const GROUND_HINTS = {
-    aurora: 'dark', ember: 'both', mineral: 'both', bloom: 'dark',
-    nocturne: 'dark', earth: 'both', mono: 'both', festival: 'dark'
-  };
+  // Replace the sprawling palette catalogue rather than adding yet more choices.
+  Object.keys(PALETTES).forEach(k=>delete PALETTES[k]);
+  Object.assign(PALETTES,CURATED);
+  if(!PALETTES[state.palette]){
+    state.palette='polarGlow';
+    state.customPalette=[...PALETTES.polarGlow.colors];
+  }
 
-  Object.entries(GROUND_HINTS).forEach(([id, ground]) => {
-    if (PALETTES[id]) PALETTES[id].ground = ground;
-  });
-  Object.assign(PALETTES, LIGHT_PALETTES);
-
-  const style = document.createElement('style');
-  style.textContent = `
+  const style=document.createElement('style');
+  style.textContent=`
     .palette-card{position:relative}
     .palette-ground-badge{position:absolute;right:7px;top:7px;padding:2px 5px;border-radius:5px;background:#070b10cc;border:1px solid #ffffff18;color:#8fa0b3;font-size:7px;letter-spacing:.08em;text-transform:uppercase;pointer-events:none}
     .palette-card[data-ground="light"] .palette-ground-badge{background:#f2eee5;color:#3d4855;border-color:#c9c1b4}
@@ -55,36 +48,31 @@
   `;
   document.head.appendChild(style);
 
-  const oldGallery = document.getElementById('paletteGallery');
-  if (oldGallery && !document.getElementById('paletteBalanceNote')) {
-    const note = document.createElement('p');
-    note.id = 'paletteBalanceNote';
-    note.className = 'palette-balance-note';
-    note.innerHTML = '<strong>Ground-aware palette set.</strong> Dark picks glow on black/navy; Light picks keep contrast on white/cream; Both are versatile.';
-    oldGallery.insertAdjacentElement('afterend', note);
+  const oldGallery=document.getElementById('paletteGallery');
+  if(oldGallery&&!document.getElementById('paletteBalanceNote')){
+    const note=document.createElement('p');
+    note.id='paletteBalanceNote';note.className='palette-balance-note';
+    note.innerHTML='<strong>Six curated palettes.</strong> Dark palettes maximise luminous depth; Light palettes hold contrast on white/cream; Both are designed to travel between grounds.';
+    oldGallery.insertAdjacentElement('afterend',note);
   }
 
-  buildPaletteGallery = function(){
-    const g = $('paletteGallery');
-    g.innerHTML = '';
-    Object.entries(PALETTES).forEach(([id,p]) => {
-      const c = document.createElement('button');
-      c.type = 'button';
-      c.className = 'palette-card' + (id === state.palette ? ' active' : '');
-      c.dataset.ground = p.ground || 'both';
-      const badge = p.ground === 'light' ? 'Light' : p.ground === 'dark' ? 'Dark' : 'Both';
-      c.innerHTML = `<div class="swatches">${p.colors.map(x=>`<i style="background:${x}"></i>`).join('')}</div><small>${p.name}</small><span class="palette-ground-badge">${badge}</span>`;
-      c.onclick = () => {
-        state.palette = id;
-        state.customPalette = [...p.colors];
-        document.querySelectorAll('.palette-color').forEach((el,i)=>el.value=state.customPalette[i]);
-        buildPaletteGallery();
-        drawTimeline();
-        render();
+  buildPaletteGallery=function(){
+    const g=$('paletteGallery');g.innerHTML='';
+    Object.entries(PALETTES).forEach(([id,p])=>{
+      const c=document.createElement('button');c.type='button';
+      c.className='palette-card'+(id===state.palette?' active':'');
+      c.dataset.ground=p.ground||'both';
+      const badge=p.ground==='light'?'Light':p.ground==='dark'?'Dark':'Both';
+      c.innerHTML=`<div class="swatches">${p.colors.map(x=>`<i style="background:${x}"></i>`).join('')}</div><small>${p.name}</small><span class="palette-ground-badge">${badge}</span>`;
+      c.onclick=()=>{
+        state.palette=id;state.customPalette=[...p.colors];
+        document.querySelectorAll('.palette-color').forEach((el,i)=>{if(state.customPalette[i])el.value=state.customPalette[i];});
+        buildPaletteGallery();drawTimeline();render();
       };
       g.appendChild(c);
     });
   };
 
+  document.querySelectorAll('.palette-color').forEach((el,i)=>{if(state.customPalette[i])el.value=state.customPalette[i];});
   buildPaletteGallery();
 })();

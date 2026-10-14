@@ -1,9 +1,8 @@
 // Spoke Detector — simple participant-friendly controls for Motion Silks.
-// Technical controls remain in state for reproducibility, but the flagship UI exposes
-// only choices that make an obvious visual difference to ordinary users.
+// The recording keeps authorship of the form; ordinary users get a few obvious
+// presentation controls rather than low-level rendering parameters.
 (() => {
   const STYLE_ID='silks';
-
   const clamp01=v=>Math.max(0,Math.min(1,v));
   const lerpLocal=(a,b,t)=>a+(b-a)*clamp01(t);
 
@@ -16,36 +15,32 @@
     const drama=clamp01(state.simpleSilkDrama/100);
     const glow=clamp01(state.simpleSilkGlow/100);
 
-    // Each public control moves several restrained maker trims together.
-    // The data-authored baseline remains underneath these presentation adjustments.
-    state.silkThickness=lerpLocal(75,130,fullness);
-    state.silkFibreDensity=lerpLocal(76,124,fullness);
+    // Stronger public ranges than the old trims, but still centred on the data-authored baseline.
+    state.silkThickness=lerpLocal(72,138,fullness);
+    state.silkFibreDensity=lerpLocal(72,132,fullness);
 
-    state.silkRipple=lerpLocal(75,130,drama);
-    state.silkFray=lerpLocal(60,140,drama);
-    state.complexity=Math.round(lerpLocal(46,92,drama));
+    state.silkRipple=lerpLocal(72,138,drama);
+    state.silkFray=lerpLocal(55,148,drama);
+    state.complexity=Math.round(lerpLocal(42,96,drama));
 
-    state.silkBloom=lerpLocal(60,140,glow);
+    state.silkBloom=lerpLocal(52,150,glow);
   }
 
-  function hideLegacyControls(){
-    // Generic technical sliders are useful for experiments, but confusing for the flagship.
-    ['density','strokeWidth','glow','complexity','symmetry','showSignature'].forEach(id=>{
+  const hiddenIds=['density','strokeWidth','glow','complexity','symmetry','showSignature'];
+
+  function setLegacyVisibility(showLegacy){
+    hiddenIds.forEach(id=>{
       const el=document.getElementById(id);
       const row=el?.closest('label');
-      if(row) row.style.display='none';
+      if(row) row.style.display=showLegacy?'':'none';
     });
-
     const variation=document.getElementById('variation');
-    if(variation) variation.style.display='none';
-
+    if(variation) variation.style.display=showLegacy?'':'none';
     const oldSilk=document.getElementById('silkMaterialControls');
     if(oldSilk) oldSilk.style.display='none';
-
-    // Motion Silks already has its own colour-flow concept; hide the older generic mapping.
     const genericColour=document.getElementById('colorMode');
     const genericColourRow=genericColour?.closest('label');
-    if(genericColourRow) genericColourRow.style.display='none';
+    if(genericColourRow) genericColourRow.style.display=showLegacy?'':'none';
   }
 
   function installSimpleControls(){
@@ -60,7 +55,7 @@
     wrap.innerHTML=`
       <div class="simple-silk-head">
         <strong>Shape & finish</strong>
-        <span>The recording creates the underlying form. These three controls change how boldly it is presented.</span>
+        <span>Your recording creates the form. These controls only change how boldly that form is presented.</span>
       </div>
 
       <label class="select-row simple-silk-colour-flow">
@@ -96,19 +91,18 @@
         <button type="button" class="simple-preset" data-preset="delicate">Delicate</button>
         <button type="button" class="simple-preset active" data-preset="balanced">Balanced</button>
         <button type="button" class="simple-preset" data-preset="bold">Bold</button>
-      </div>
-    `;
+      </div>`;
 
-    const background=document.querySelector('.background-control');
-    if(background) section.insertBefore(wrap,background);
-    else section.appendChild(wrap);
+    // Mount next to the old technical block/variation button. This is guaranteed to be
+    // in the same parent; the previous implementation incorrectly targeted the nested
+    // background control and could throw NotFoundError before the panel appeared.
+    const oldSilk=document.getElementById('silkMaterialControls');
+    const anchor=oldSilk||variation;
+    anchor.parentNode.insertBefore(wrap,anchor);
 
     const colour=document.getElementById('simpleSilkColourMode');
     colour.value=state.silkColourMode||'hybrid';
-    colour.addEventListener('change',e=>{
-      state.silkColourMode=e.target.value;
-      render();
-    });
+    colour.addEventListener('change',e=>{state.silkColourMode=e.target.value;render();});
 
     const bind=(id,stateKey,outId)=>{
       const input=document.getElementById(id),out=document.getElementById(outId);
@@ -120,49 +114,38 @@
         render();
       });
     };
-
     bind('simpleSilkFullness','simpleSilkFullness','simpleSilkFullnessOut');
     bind('simpleSilkDrama','simpleSilkDrama','simpleSilkDramaOut');
     bind('simpleSilkGlow','simpleSilkGlow','simpleSilkGlowOut');
 
     const PRESETS={
-      delicate:{fullness:24,drama:27,glow:34},
+      delicate:{fullness:20,drama:22,glow:28},
       balanced:{fullness:50,drama:50,glow:50},
-      bold:{fullness:82,drama:78,glow:76}
+      bold:{fullness:86,drama:84,glow:82}
     };
     wrap.querySelectorAll('.simple-preset').forEach(btn=>btn.addEventListener('click',()=>{
       const p=PRESETS[btn.dataset.preset];
-      state.simpleSilkFullness=p.fullness;
-      state.simpleSilkDrama=p.drama;
-      state.simpleSilkGlow=p.glow;
-      document.getElementById('simpleSilkFullness').value=p.fullness;
-      document.getElementById('simpleSilkDrama').value=p.drama;
-      document.getElementById('simpleSilkGlow').value=p.glow;
+      state.simpleSilkFullness=p.fullness;state.simpleSilkDrama=p.drama;state.simpleSilkGlow=p.glow;
+      for(const [id,v] of [['simpleSilkFullness',p.fullness],['simpleSilkDrama',p.drama],['simpleSilkGlow',p.glow]])document.getElementById(id).value=v;
       document.getElementById('simpleSilkFullnessOut').textContent=`${p.fullness}%`;
       document.getElementById('simpleSilkDramaOut').textContent=`${p.drama}%`;
       document.getElementById('simpleSilkGlowOut').textContent=`${p.glow}%`;
       wrap.querySelectorAll('.simple-preset').forEach(b=>b.classList.toggle('active',b===btn));
-      mapSimpleControls();
-      render();
+      mapSimpleControls();render();
     }));
   }
 
   function refreshVisibility(){
-    const show=state.style===STYLE_ID;
+    const isSilks=state.style===STYLE_ID;
     const simple=document.getElementById('simpleSilkControls');
-    if(simple) simple.style.display=show?'':'none';
-    // Keep legacy technical controls hidden while Motion Silks is selected.
-    if(show) hideLegacyControls();
+    if(simple) simple.style.display=isSilks?'':'none';
+    setLegacyVisibility(!isSilks);
   }
 
   const previousBuild=buildStyleGallery;
-  buildStyleGallery=function(){
-    previousBuild();
-    setTimeout(refreshVisibility,0);
-  };
+  buildStyleGallery=function(){previousBuild();setTimeout(refreshVisibility,0);};
 
   mapSimpleControls();
-  hideLegacyControls();
   installSimpleControls();
   refreshVisibility();
 

@@ -1,44 +1,50 @@
 // Spoke Detector — expanded curated palette system.
-// Twenty-four deliberate palettes: eight dark-ground, eight light-ground, eight versatile.
+// Thirty deliberate palettes with genuinely broad hue families for dark, light and versatile grounds.
 // Custom five-colour editing remains available below the preset gallery.
 (() => {
   const CURATED = {
     // DARK — luminous / emissive families
     polarGlow: {name:'Polar Glow',ground:'dark',colors:['#79F3FF','#38CFEA','#7897FF','#D85BEB','#FF62C5']},
-    nocturneDuet: {name:'Nocturne Duet',ground:'dark',colors:['#5DE6D7','#2EB9D1','#6673D8','#BD4AC8','#F36BAF']},
-    auroraFlame: {name:'Aurora Flame',ground:'dark',colors:['#6EF4E8','#28D0C5','#46A2E5','#C94FD4','#FF6C67']},
+    auroraSpectrum: {name:'Aurora Spectrum',ground:'dark',colors:['#28F0D2','#7CF255','#F4E04D','#FF8A42','#F04A76']},
+    electricGarden: {name:'Electric Garden',ground:'dark',colors:['#25E6A8','#74F05A','#E7EF52','#FF9D3D','#F04E91']},
+    solarFlare: {name:'Solar Flare',ground:'dark',colors:['#3AE6FF','#55E66B','#F6E94F','#FF9C36','#FF4C5A']},
     ultravioletCoral: {name:'Ultraviolet Coral',ground:'dark',colors:['#46E2FF','#557CFF','#8D5BE8','#E654BA','#FF755E']},
-    emeraldRose: {name:'Emerald Rose',ground:'dark',colors:['#69E6C1','#29C5A8','#41A3C4','#C14893','#FF5D9B']},
-    electricCitrus: {name:'Electric Citrus',ground:'dark',colors:['#58F2D4','#2BC4D4','#5E8FFF','#DF62C9','#FFB14A']},
-    plasmaBerry: {name:'Plasma Berry',ground:'dark',colors:['#54E8FF','#49A8F2','#7966E8','#C849CC','#FF4F91']},
-    neonEmber: {name:'Neon Ember',ground:'dark',colors:['#57EFE1','#39AFC7','#766FD9','#DF577F','#FF8A48']},
+    neonHarvest: {name:'Neon Harvest',ground:'dark',colors:['#2DE7C2','#7EE75E','#FFD84A','#FF8C3A','#FF4F6E']},
+    prismNight: {name:'Prism Night',ground:'dark',colors:['#24D7FF','#4EE58B','#EDEB55','#C95DF4','#FF5D6C']},
+    festivalGlow: {name:'Festival Glow',ground:'dark',colors:['#00F5D4','#9BEE4C','#FEE440','#F15BB5','#7A5CFF']},
+    jungleNeon: {name:'Jungle Neon',ground:'dark',colors:['#13E6A0','#57E389','#D9E94B','#FFAA3B','#F1516B']},
+    cosmicCitrus: {name:'Cosmic Citrus',ground:'dark',colors:['#33D5FF','#59E26D','#F2E85B','#FF9F45','#B95CFF']},
 
     // LIGHT — stronger ink-like colours for white / cream / neutral grounds
     inkBlush: {name:'Ink & Blush',ground:'light',colors:['#086879','#165B78','#46507B','#8B315F','#B52E62']},
+    orchardInk: {name:'Orchard Ink',ground:'light',colors:['#176B55','#5A7A2F','#A98A16','#B95B2A','#9E2F45']},
+    botanicalHeat: {name:'Botanical Heat',ground:'light',colors:['#1E6B57','#4F7A3A','#9B8B27','#B86132','#A13D50']},
+    cobaltSaffron: {name:'Cobalt Saffron',ground:'light',colors:['#1B4F8A','#3269A5','#7C5B8A','#B27A1E','#B44A3F']},
+    forestAmber: {name:'Forest Amber',ground:'light',colors:['#285E45','#527044','#8B7A2B','#A65B2F','#8D3E55']},
+    petrolOchre: {name:'Petrol / Ochre',ground:'light',colors:['#155B62','#2D6F74','#6A6D50','#A0782A','#A64E36']},
     graphitePrism: {name:'Graphite Prism',ground:'light',colors:['#26434D','#38586A','#515675','#704267','#913A5A']},
-    cobaltEmber: {name:'Cobalt Ember',ground:'light',colors:['#125481','#206A9D','#5E4E8A','#A6415B','#B95E33']},
-    botanicalPlum: {name:'Botanical Plum',ground:'light',colors:['#285E51','#347769','#4E7777','#764E70','#99466C']},
-    oxfordRose: {name:'Oxford Rose',ground:'light',colors:['#163F59','#245D73','#4E6278','#7C455F','#A13C59']},
-    petrolRust: {name:'Petrol / Rust',ground:'light',colors:['#155B62','#267178','#476F78','#8C4B4B','#B0593A']},
-    indigoSaffron: {name:'Indigo Saffron',ground:'light',colors:['#243D66','#36558A','#605A86','#936040','#A56D20']},
-    forestWine: {name:'Forest / Wine',ground:'light',colors:['#244F48','#35665D','#57646C','#784756','#973D52']},
+    plumCitrus: {name:'Plum / Citrus',ground:'light',colors:['#4A355F','#6E4775','#8A6A36','#B47B22','#B6533A']},
+    jadeBrick: {name:'Jade / Brick',ground:'light',colors:['#2A6958','#4F7552','#867642','#A95D39','#9A3D48']},
+    mediterranean: {name:'Mediterranean',ground:'light',colors:['#1D6B73','#387C78','#7B7C3B','#B17A2C','#AA4F45']},
 
-    // BOTH — sufficiently saturated on dark but deep enough for light grounds
+    // BOTH — saturated enough for dark, deep enough for light
     signalDuet: {name:'Signal Duet',ground:'both',colors:['#00A9C6','#297AB8','#655DB7','#C5428B','#E85279']},
-    studioAccent: {name:'Studio Accent',ground:'both',colors:['#39747A','#4D7183','#626581','#7F556E','#A34F69']},
-    tealCopper: {name:'Teal / Copper',ground:'both',colors:['#298E92','#3B8596','#627B8A','#9B625A','#BF6C3C']},
-    oceanOrchid: {name:'Ocean Orchid',ground:'both',colors:['#168DA3','#337BAE','#5D68B3','#9A4DA4','#C84F83']},
-    jadeCoral: {name:'Jade / Coral',ground:'both',colors:['#2A9A82','#348C8D','#587B91','#B15475','#DA665F']},
-    cobaltRose: {name:'Cobalt Rose',ground:'both',colors:['#267FB0','#3E72B7','#6E60B1','#B24C91','#D95D78']},
-    mineralHeat: {name:'Mineral Heat',ground:'both',colors:['#2E8F8B','#438496','#667590','#A25B67','#C96D45']},
-    duskGold: {name:'Dusk Gold',ground:'both',colors:['#3A8192','#536E9A','#765F8C','#A45E65','#C78B3E']}
+    spectrumFive: {name:'Spectrum Five',ground:'both',colors:['#009FC6','#2FAE72','#C6B72E','#E67D2F','#C83D69']},
+    greenGoldRose: {name:'Green / Gold / Rose',ground:'both',colors:['#279F7A','#62A54E','#C4AA31','#D6763B','#C94F73']},
+    cyanLimeOrange: {name:'Cyan / Lime / Orange',ground:'both',colors:['#13A9C9','#39B67E','#9EBB3C','#E69932','#D95652']},
+    blueGreenSunset: {name:'Blue Green Sunset',ground:'both',colors:['#2B78B8','#2F9B88','#76A84E','#D19036','#C64D62']},
+    jadeCoral: {name:'Jade / Coral',ground:'both',colors:['#2A9A82','#4BA55A','#B2A13A','#D46A4E','#C6537D']},
+    tealCopper: {name:'Teal / Copper',ground:'both',colors:['#298E92','#3B9D78','#8E9A46','#BF7B3C','#A95060']},
+    mineralRainbow: {name:'Mineral Rainbow',ground:'both',colors:['#238BAA','#399B75','#8FA147','#C48636','#B54C6D']},
+    duskSpectrum: {name:'Dusk Spectrum',ground:'both',colors:['#3A8192','#4C9270','#9B954A','#C07B3F','#A94E79']},
+    studioFestival: {name:'Studio Festival',ground:'both',colors:['#168EA5','#37A56F','#A5A441','#D67E35','#B64B76']}
   };
 
   Object.keys(PALETTES).forEach(k=>delete PALETTES[k]);
   Object.assign(PALETTES,CURATED);
   if(!PALETTES[state.palette]){
-    state.palette='polarGlow';
-    state.customPalette=[...PALETTES.polarGlow.colors];
+    state.palette='auroraSpectrum';
+    state.customPalette=[...PALETTES.auroraSpectrum.colors];
   }
 
   const style=document.createElement('style');
@@ -61,7 +67,7 @@
     note.id='paletteBalanceNote';note.className='palette-balance-note';
     oldGallery.insertAdjacentElement('afterend',note);
   }
-  if(note) note.innerHTML='<strong>24 curated palettes + custom editing.</strong> Eight are tuned for dark grounds, eight for light/neutral grounds and eight work across both.';
+  if(note) note.innerHTML='<strong>30 curated palettes + custom editing.</strong> Several are true full-spectrum sets with green, yellow, orange, red, violet, cyan and blue—not just blue/pink variations.';
 
   buildPaletteGallery=function(){
     const g=$('paletteGallery');g.innerHTML='';

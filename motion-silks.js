@@ -18,6 +18,7 @@
   state.silkRipple ??= 100;
   state.silkFray ??= 90;
   state.silkBloom ??= 100;
+  state.silkColourMode ??= 'hybrid';
 
   let previewTimer=null;
   let prepCache={key:null,out:null,ret:null};
@@ -68,10 +69,23 @@
     prepCache={key,out,ret};return {r,out,ret};
   }
   function rgbaCss(hex,a){const [r,g,b]=hexRgb(hex);return `rgba(${r},${g},${b},${a})`;}
+
   function journeyBase(journey){
     const p=state.customPalette;if(!p?.length)return journey?'#e24aa8':'#39cbe5';
     return journey===0?mixHex(p[0],p[Math.min(1,p.length-1)],.28):mixHex(p[Math.max(0,p.length-2)],p[p.length-1],.72);
   }
+  function silkPaletteColor(journey,t,u=0){
+    const mode=state.silkColourMode||'hybrid';
+    const widthT=clamp((u+1)/2,0,1),tt=((t%1)+1)%1;
+    if(mode==='journey-duo')return journeyBase(journey);
+    if(mode==='time-spectrum')return paletteColor(tt);
+    if(mode==='ribbon-spectrum')return paletteColor(widthT);
+    if(mode==='journey-spectrum')return paletteColor(clamp((journey?0.5:0)+tt*.5,0,.999));
+    // Hybrid keeps the two journeys recognisable while letting several hues travel through each.
+    const base=journey?0.34:0.0;
+    return paletteColor(clamp(base+tt*.42+widthT*.20,0,.999));
+  }
+
   function buildGeometry(sig,cx,cy,baseR,phase){
     const n=sig.m.length,complexity=state.complexity/100;
     const ripple=clamp(state.silkRipple/100,.25,2.25),thickness=clamp(state.silkThickness/100,.45,2.0);
@@ -102,37 +116,74 @@
   function drawBodyPass(ctx,geo,color,alpha,blur,scale,composite){
     ctx.save();ctx.globalCompositeOperation=composite;ctx.globalAlpha=alpha;ctx.filter=blur?`blur(${blur}px)`:'none';traceClosed(ctx,ribbonPolygon(geo,scale));ctx.fillStyle=color;ctx.fill();ctx.restore();
   }
+  function bandPolygon(a,b){return a.concat([...b].reverse());}
+  function drawBand(ctx,pts,color,alpha,blur,composite){
+    ctx.save();ctx.globalCompositeOperation=composite;ctx.globalAlpha=alpha;ctx.filter=blur?`blur(${blur}px)`:'none';traceClosed(ctx,pts);ctx.fillStyle=color;ctx.fill();ctx.restore();
+  }
+  function drawSegmentedStroke(ctx,pts,width,alpha,colourFn,blur,composite,step=3){
+    if(pts.length<2)return;
+    ctx.save();ctx.globalCompositeOperation=composite;ctx.globalAlpha=alpha;ctx.filter=blur?`blur(${blur}px)`:'none';ctx.lineCap='round';ctx.lineJoin='round';ctx.lineWidth=width;
+    for(let i=1;i<pts.length;i+=step){
+      const j=Math.min(i+step,pts.length-1),t=(i+j)/(2*(pts.length-1));
+      ctx.beginPath();ctx.moveTo(pts[i-1].x,pts[i-1].y);ctx.lineTo(pts[j].x,pts[j].y);ctx.strokeStyle=colourFn(t);ctx.stroke();
+    }
+    ctx.restore();
+  }
+
   function drawJourney(ctx,sig,journey,geo,quality){
-    const dark=state.darkGround,base=journeyBase(journey),luminous=mixHex(base,'#ffffff',dark?.62:.16),deep=mixHex(base,dark?'#ffffff':'#101820',dark?.04:.28),bloom=clamp(state.silkBloom/100,0,1.8),comp=dark?'screen':'source-over';
-    drawBodyPass(ctx,geo,base,(dark?.065:.085)+bloom*.035,28+bloom*28,1.20,comp);
-    drawBodyPass(ctx,geo,base,(dark?.105:.12)+bloom*.045,11+bloom*13,1.06,comp);
-    drawBodyPass(ctx,geo,deep,dark?.14:.11,0,1,'source-over');
-    drawBodyPass(ctx,geo,luminous,(dark?.10:.065)+bloom*.035,2.5+bloom*3.2,.68,comp);
-    drawBodyPass(ctx,geo,mixHex(luminous,'#ffffff',.45),(dark?.065:.035)+bloom*.025,.8+bloom*1.2,.34,comp);
+    const dark=state.darkGround,bloom=clamp(state.silkBloom/100,0,1.8),comp=dark?'screen':'source-over';
+    const duoBase=journeyBase(journey),bodyColor=silkPaletteColor(journey,.5,0);
+    const luminous=mixHex(bodyColor,'#ffffff',dark?.58:.14),deep=mixHex(bodyColor,dark?'#ffffff':'#101820',dark?.03:.30);
+
+    // Broad atmospheric body keeps the ribbon coherent.
+    drawBodyPass(ctx,geo,bodyColor,(dark?.05:.07)+bloom*.025,26+bloom*24,1.18,comp);
+    drawBodyPass(ctx,geo,deep,dark?.10:.085,0,1,'source-over');
+
+    // Width bands expose the full palette across the silk instead of collapsing to two hues.
+    const bands=quality==='preview'?8:12;
+    for(let b=0;b<bands;b++){
+      const u0=-1+2*b/bands,u1=-1+2*(b+1)/bands,um=(u0+u1)/2;
+      const a=offsetLine(geo,sig,u0,100+b),c=offsetLine(geo,sig,u1,200+b),poly=bandPolygon(a,c);
+      const color=silkPaletteColor(journey,.5,um),hot=mixHex(color,'#ffffff',dark?.22:.07);
+      drawBand(ctx,poly,color,(dark?.055:.065)+bloom*.014,7+bloom*5,comp);
+      drawBand(ctx,poly,hot,dark?.035:.025,1.2+bloom*.8,comp);
+    }
+
+    // Time-colour shoulder adds obvious colour travel around the loop in Time/Hybrid modes.
+    if(state.silkColourMode!=='ribbon-spectrum'&&state.silkColourMode!=='journey-duo'){
+      const avgWidth=mean(geo.widths)*1.15;
+      drawSegmentedStroke(ctx,geo.centres,avgWidth,(dark?.12:.08)+bloom*.02,t=>silkPaletteColor(journey,t,0),5+bloom*3,comp,quality==='preview'?5:3);
+    }
 
     const requested=Math.round(clamp(state.silkFibreDensity,12,96));
     const fibres=quality==='preview'?Math.min(requested,42):requested;
     for(let s=0;s<fibres;s++){
       const u=-1+2*s/(fibres-1||1),mid=1-Math.abs(u),pts=offsetLine(geo,sig,u,s+state.variation*.37);
-      ctx.save();ctx.globalCompositeOperation=comp;
-      const densityFade=Math.sqrt(54/Math.max(18,fibres));ctx.strokeStyle=rgbaCss(mixHex(base,'#ffffff',.16+.42*mid),(dark?(.032+.072*mid):(.04+.065*mid))*densityFade);
-      ctx.lineWidth=.55+1.15*mid;ctx.lineCap='round';ctx.lineJoin='round';traceOpen(ctx,pts);ctx.stroke();ctx.restore();
+      const densityFade=Math.sqrt(54/Math.max(18,fibres));
+      if(state.silkColourMode==='time-spectrum'||state.silkColourMode==='journey-spectrum'||state.silkColourMode==='hybrid'){
+        drawSegmentedStroke(ctx,pts,.55+1.15*mid,(dark?(.028+.060*mid):(.034+.052*mid))*densityFade,t=>mixHex(silkPaletteColor(journey,t,u),'#ffffff',.12+.26*mid),0,comp,quality==='preview'?7:4);
+      }else{
+        const fibreColor=mixHex(silkPaletteColor(journey,.5,u),'#ffffff',.14+.32*mid);
+        ctx.save();ctx.globalCompositeOperation=comp;ctx.strokeStyle=rgbaCss(fibreColor,(dark?(.032+.072*mid):(.04+.065*mid))*densityFade);ctx.lineWidth=.55+1.15*mid;ctx.lineCap='round';ctx.lineJoin='round';traceOpen(ctx,pts);ctx.stroke();ctx.restore();
+      }
     }
 
-    const core=geo.centres;
-    ctx.save();ctx.globalCompositeOperation=comp;ctx.lineCap='round';ctx.lineJoin='round';
-    ctx.filter=`blur(${dark?3.5+2*bloom:1.7+bloom}px)`;ctx.strokeStyle=rgbaCss(base,dark?.30:.16);ctx.lineWidth=11+4*bloom;traceOpen(ctx,core);ctx.stroke();
-    ctx.filter='none';ctx.strokeStyle=rgbaCss(mixHex(base,'#ffffff',.42),dark?.66:.42);ctx.lineWidth=4.7;traceOpen(ctx,core);ctx.stroke();
-    ctx.strokeStyle=rgbaCss(luminous,dark?.90:.67);ctx.lineWidth=1.45;traceOpen(ctx,core);ctx.stroke();ctx.restore();
+    // Hot core now follows the palette through time rather than one fixed journey colour.
+    const core=geo.centres,segStep=quality==='preview'?5:3;
+    drawSegmentedStroke(ctx,core,11+4*bloom,dark?.24:.14,t=>silkPaletteColor(journey,t,0),dark?3.5+2*bloom:1.7+bloom,comp,segStep);
+    drawSegmentedStroke(ctx,core,4.7,dark?.62:.40,t=>mixHex(silkPaletteColor(journey,t,0),'#ffffff',.40),0,comp,segStep);
+    drawSegmentedStroke(ctx,core,1.45,dark?.88:.64,t=>mixHex(silkPaletteColor(journey,t,0),'#ffffff',dark?.68:.20),0,comp,segStep);
 
     const threshold=Math.max(.72,quantile(sig.impact,.974)),events=[];
     for(let i=3;i<sig.impact.length-3;i++)if(sig.impact[i]>=threshold&&sig.impact[i]>=sig.impact[i-1]&&sig.impact[i]>=sig.impact[i+1])events.push({i,a:sig.impact[i]});
     events.sort((a,b)=>b.a-a.a).slice(0,quality==='preview'?6:10).forEach(({i,a})=>{
       const p=geo.centres[i],q=geo.centres[(i+3)%geo.centres.length],dx=q.x-p.x,dy=q.y-p.y,L=Math.hypot(dx,dy)||1,ux=dx/L,uy=dy/L,len=6+16*a;
-      ctx.save();ctx.globalCompositeOperation=comp;ctx.lineCap='round';ctx.filter=`blur(${2+4*a*bloom}px)`;ctx.strokeStyle=rgbaCss('#ffffff',dark?.22:.12);ctx.lineWidth=5+5*a;ctx.beginPath();ctx.moveTo(p.x-ux*len*.5,p.y-uy*len*.5);ctx.lineTo(p.x+ux*len*.5,p.y+uy*len*.5);ctx.stroke();
+      const flare=mixHex(silkPaletteColor(journey,i/geo.centres.length,0),'#ffffff',.72);
+      ctx.save();ctx.globalCompositeOperation=comp;ctx.lineCap='round';ctx.filter=`blur(${2+4*a*bloom}px)`;ctx.strokeStyle=rgbaCss(flare,dark?.24:.13);ctx.lineWidth=5+5*a;ctx.beginPath();ctx.moveTo(p.x-ux*len*.5,p.y-uy*len*.5);ctx.lineTo(p.x+ux*len*.5,p.y+uy*len*.5);ctx.stroke();
       ctx.filter='none';ctx.strokeStyle=rgbaCss(dark?'#ffffff':'#18212b',.72+.22*a);ctx.lineWidth=1.4+1.8*a;ctx.beginPath();ctx.moveTo(p.x-ux*len*.5,p.y-uy*len*.5);ctx.lineTo(p.x+ux*len*.5,p.y+uy*len*.5);ctx.stroke();ctx.restore();
     });
   }
+
   function renderMaterial(outSig,retSig,sep,quality){
     const raster=quality==='export'?EXPORT_RASTER:PREVIEW_RASTER,canvas=document.createElement('canvas');canvas.width=raster;canvas.height=raster;
     const ctx=canvas.getContext('2d',{alpha:true});ctx.scale(raster/1200,raster/1200);
@@ -183,8 +234,17 @@
       ['silkFray','Texture / fray',0,180,1,state.silkFray,v=>`${Math.round(v)}%`],
       ['silkBloom','Bloom',0,180,1,state.silkBloom,v=>`${Math.round(v)}%`]
     ];
-    wrap.innerHTML=`<div class="silk-controls-title"><strong>Motion Silks material</strong><span>Scales how measured motion is expressed; sensor values are unchanged.</span></div>`+rows.map(([id,label,min,max,step,value,fmt])=>`<label class="control-row compact"><div><span>${label}</span><output id="${id}Out">${fmt(value)}</output></div><input id="${id}" type="range" min="${min}" max="${max}" step="${step}" value="${value}"></label>`).join('');
+    wrap.innerHTML=`<div class="silk-controls-title"><strong>Motion Silks material</strong><span>Scales how measured motion is expressed; sensor values are unchanged.</span></div>
+      <label class="select-row silk-colour-row"><span>Colour spread</span><select id="silkColourMode">
+        <option value="hybrid">Hybrid — rich + journey-aware</option>
+        <option value="time-spectrum">Time spectrum</option>
+        <option value="ribbon-spectrum">Across ribbon</option>
+        <option value="journey-spectrum">Journey spectrum</option>
+        <option value="journey-duo">Journey duo</option>
+      </select></label>`+rows.map(([id,label,min,max,step,value,fmt])=>`<label class="control-row compact"><div><span>${label}</span><output id="${id}Out">${fmt(value)}</output></div><input id="${id}" type="range" min="${min}" max="${max}" step="${step}" value="${value}"></label>`).join('');
     variation.insertAdjacentElement('beforebegin',wrap);
+    const colourMode=$('silkColourMode');colourMode.value=state.silkColourMode;
+    colourMode.addEventListener('change',e=>{state.silkColourMode=e.target.value;if(state.style===STYLE_ID)schedulePreview(true);});
     rows.forEach(([id,,min,max,,value,fmt])=>{const input=$(id),out=$(`${id}Out`);input.addEventListener('input',e=>{const v=clamp(+e.target.value,+min,+max);state[id]=v;out.textContent=fmt(v);if(state.style===STYLE_ID)schedulePreview(false);});input.addEventListener('change',()=>{if(state.style===STYLE_ID)schedulePreview(true);});});
   }
 
@@ -203,7 +263,7 @@
     .study-toggle{margin-top:9px;width:100%}
     .silk-material-controls{margin:15px 0 12px;padding:12px;border:1px solid #22303e;border-radius:12px;background:#0a1016}
     .silk-controls-title{display:grid;gap:3px;margin-bottom:8px}.silk-controls-title strong{font:600 11px Manrope,sans-serif;color:#dce7f1}.silk-controls-title span{font-size:8px;line-height:1.4;color:#6f7e8e}
-    .silk-material-controls .control-row{margin:8px 0 0}
+    .silk-material-controls .control-row{margin:8px 0 0}.silk-colour-row{margin:8px 0 11px}.silk-colour-row select{width:100%}
   `;document.head.appendChild(style);
 
   buildStyleGallery();installMaterialControls();if(state.time.length)schedulePreview(true);

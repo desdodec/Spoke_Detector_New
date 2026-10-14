@@ -10,6 +10,13 @@
     note:'flagship portrait — time runs around the loop; measured movement shapes the ribbon'
   });
 
+  // These controls scale the artistic response to measured data. They never create sensor values.
+  state.silkFibreDensity ??= 54;   // number of internal fibre traces
+  state.silkThickness ??= 100;     // ribbon body width, percent
+  state.silkRipple ??= 100;        // measured displacement strength, percent
+  state.silkFray ??= 90;           // measured local irregularity -> strand decorrelation, percent
+  state.silkBloom ??= 100;         // luminous material bloom, percent
+
   function localWindow(arr,i,r=7){
     let s=0,s2=0,n=0;
     for(let k=-r;k<=r;k++){
@@ -63,7 +70,9 @@
   }
   function buildGeometry(sig,cx,cy,baseR,phase){
     const n=sig.m.length,complexity=state.complexity/100;
-    const ampScale=68+complexity*58,sideScale=17+complexity*18;
+    const ripple=clamp(state.silkRipple/100,.25,2.25);
+    const thickness=clamp(state.silkThickness/100,.45,2.0);
+    const ampScale=(68+complexity*58)*ripple,sideScale=(17+complexity*18)*ripple;
     const centres=[];
     for(let i=0;i<n;i++){
       const f=i/n,th=phase+f*Math.PI*2;
@@ -82,7 +91,7 @@
       return {x:-dy/L,y:dx/L};
     });
     const widths=sig.energy.map((e,i)=>{
-      const base=27 + 48*e + 16*sig.fray[i];
+      const base=(27 + 48*e + 16*sig.fray[i])*thickness;
       return base*(.90+.20*Math.sin(Math.PI*2*centres[i].f+0.4)**2);
     });
     return {centres,normals,widths};
@@ -109,9 +118,10 @@
   }
   function offsetLine(geo,sig,u,variation){
     const pts=[],n=geo.centres.length;
+    const frayControl=clamp(state.silkFray/100,0,2.0);
     for(let i=0;i<n;i++){
       const p=geo.centres[i],nn=geo.normals[i],w=geo.widths[i];
-      const measuredFray=sig.fray[i]*(5+14*Math.abs(u));
+      const measuredFray=sig.fray[i]*(5+14*Math.abs(u))*frayControl;
       const wig=(Math.sin(i*.115+variation*1.7)+.45*Math.sin(i*.047+variation*2.9))*measuredFray;
       const off=u*w*.82+wig;
       pts.push({x:p.x+nn.x*off,y:p.y+nn.y*off});
@@ -127,32 +137,33 @@
     const dark=state.darkGround,base=journeyBase(journey);
     const luminous=mixHex(base,'#ffffff',dark?.62:.16);
     const deep=mixHex(base,dark?'#ffffff':'#101820',dark?.04:.28);
-    const glow=(state.glow||0)/100;
+    const bloom=clamp(state.silkBloom/100,0,1.8);
     const comp=dark?'screen':'source-over';
 
     // Atmospheric volume: broad colour body first, then tighter luminous shoulders.
-    drawBodyPass(ctx,geo,base,(dark?.075:.095)+glow*.025,34+glow*20,1.18,comp);
-    drawBodyPass(ctx,geo,base,(dark?.12:.13)+glow*.035,15+glow*10,1.05,comp);
+    drawBodyPass(ctx,geo,base,(dark?.065:.085)+bloom*.035,(28+bloom*28),1.20,comp);
+    drawBodyPass(ctx,geo,base,(dark?.105:.12)+bloom*.045,(11+bloom*13),1.06,comp);
     drawBodyPass(ctx,geo,deep,dark?.14:.11,0,1.00,'source-over');
-    drawBodyPass(ctx,geo,luminous,dark?.13:.075,4.5,0.66,comp);
-    drawBodyPass(ctx,geo,mixHex(luminous,'#ffffff',.45),dark?.09:.045,1.5,0.34,comp);
+    drawBodyPass(ctx,geo,luminous,(dark?.10:.065)+bloom*.035,2.5+bloom*3.2,0.68,comp);
+    drawBodyPass(ctx,geo,mixHex(luminous,'#ffffff',.45),(dark?.065:.035)+bloom*.025,.8+bloom*1.2,0.34,comp);
 
-    // A modest number of fibres live inside the material rather than defining its edges.
-    const fibres=Math.max(13,Math.min(25,Math.round(11+state.density*.18)));
+    // Fibre density is a presentation control; every fibre remains centred on the measured geometry.
+    const fibres=Math.round(clamp(state.silkFibreDensity,12,96));
     for(let s=0;s<fibres;s++){
       const u=-1+2*s/(fibres-1||1),mid=1-Math.abs(u),pts=offsetLine(geo,sig,u,s+state.variation*.37);
       ctx.save();ctx.globalCompositeOperation=comp;
-      ctx.strokeStyle=rgbaCss(mixHex(base,'#ffffff',.16+.42*mid),dark?(.045+.085*mid):(.055+.075*mid));
-      ctx.lineWidth=.7+1.35*mid;ctx.lineCap='round';ctx.lineJoin='round';
+      const densityFade=Math.sqrt(54/Math.max(18,fibres));
+      ctx.strokeStyle=rgbaCss(mixHex(base,'#ffffff',.16+.42*mid),(dark?(.032+.072*mid):(.04+.065*mid))*densityFade);
+      ctx.lineWidth=.55+1.15*mid;ctx.lineCap='round';ctx.lineJoin='round';
       traceOpen(ctx,pts);ctx.stroke();ctx.restore();
     }
 
     // Hot core hierarchy: broad coloured shoulder -> bright filament -> white glints.
     const core=geo.centres.map(p=>({x:p.x,y:p.y}));
     ctx.save();ctx.globalCompositeOperation=comp;ctx.lineCap='round';ctx.lineJoin='round';
-    ctx.filter=`blur(${dark?5:2.5}px)`;ctx.strokeStyle=rgbaCss(base,dark?.30:.16);ctx.lineWidth=13;traceOpen(ctx,core);ctx.stroke();
-    ctx.filter='none';ctx.strokeStyle=rgbaCss(mixHex(base,'#ffffff',.42),dark?.66:.42);ctx.lineWidth=5.2;traceOpen(ctx,core);ctx.stroke();
-    ctx.strokeStyle=rgbaCss(luminous,dark?.90:.67);ctx.lineWidth=1.55;traceOpen(ctx,core);ctx.stroke();ctx.restore();
+    ctx.filter=`blur(${dark?3.5+2*bloom:1.7+bloom}px)`;ctx.strokeStyle=rgbaCss(base,dark?.30:.16);ctx.lineWidth=11+4*bloom;traceOpen(ctx,core);ctx.stroke();
+    ctx.filter='none';ctx.strokeStyle=rgbaCss(mixHex(base,'#ffffff',.42),dark?.66:.42);ctx.lineWidth=4.7;traceOpen(ctx,core);ctx.stroke();
+    ctx.strokeStyle=rgbaCss(luminous,dark?.90:.67);ctx.lineWidth=1.45;traceOpen(ctx,core);ctx.stroke();ctx.restore();
 
     // Strong events become short embedded flares, not chart-like dots.
     const threshold=Math.max(.72,quantile(sig.impact,.974)),events=[];
@@ -162,7 +173,7 @@
     events.sort((a,b)=>b.a-a.a).slice(0,9).forEach(({i,a})=>{
       const p=geo.centres[i],q=geo.centres[(i+3)%geo.centres.length],dx=q.x-p.x,dy=q.y-p.y,L=Math.hypot(dx,dy)||1,ux=dx/L,uy=dy/L,len=6+16*a;
       ctx.save();ctx.globalCompositeOperation=comp;ctx.lineCap='round';
-      ctx.filter=`blur(${3+4*a}px)`;ctx.strokeStyle=rgbaCss('#ffffff',dark?.22:.12);ctx.lineWidth=6+5*a;ctx.beginPath();ctx.moveTo(p.x-ux*len*.5,p.y-uy*len*.5);ctx.lineTo(p.x+ux*len*.5,p.y+uy*len*.5);ctx.stroke();
+      ctx.filter=`blur(${2+4*a*bloom}px)`;ctx.strokeStyle=rgbaCss('#ffffff',dark?.22:.12);ctx.lineWidth=5+5*a;ctx.beginPath();ctx.moveTo(p.x-ux*len*.5,p.y-uy*len*.5);ctx.lineTo(p.x+ux*len*.5,p.y+uy*len*.5);ctx.stroke();
       ctx.filter='none';ctx.strokeStyle=rgbaCss(dark?'#ffffff':'#18212b',.72+.22*a);ctx.lineWidth=1.4+1.8*a;ctx.beginPath();ctx.moveTo(p.x-ux*len*.5,p.y-uy*len*.5);ctx.lineTo(p.x+ux*len*.5,p.y+uy*len*.5);ctx.stroke();ctx.restore();
     });
   }
@@ -170,16 +181,16 @@
     const canvas=document.createElement('canvas');canvas.width=RASTER;canvas.height=RASTER;
     const ctx=canvas.getContext('2d',{alpha:true});
     const S=RASTER/1200;ctx.scale(S,S);
-    const overlap=state.symmetry/100;
     const outGeo=buildGeometry(outSig,600-sep,590,287,Math.PI*.14);
     const retGeo=buildGeometry(retSig,600+sep,610,301,Math.PI*1.08);
     drawJourney(ctx,outSig,0,outGeo);
     drawJourney(ctx,retSig,1,retGeo);
-    // A final restrained bloom lets cyan/magenta overlaps approach white on dark grounds.
-    if(state.darkGround){
+    // Final restrained bloom lets overlaps approach white on dark grounds.
+    if(state.darkGround&&state.silkBloom>0){
       const copy=document.createElement('canvas');copy.width=RASTER;copy.height=RASTER;
       const cc=copy.getContext('2d');cc.drawImage(canvas,0,0);
-      ctx.save();ctx.setTransform(1,0,0,1,0,0);ctx.globalCompositeOperation='screen';ctx.globalAlpha=.16+.14*(state.glow/100);ctx.filter=`blur(${8+10*(state.glow/100)}px)`;ctx.drawImage(copy,0,0);ctx.restore();
+      const bloom=clamp(state.silkBloom/100,0,1.8);
+      ctx.save();ctx.setTransform(1,0,0,1,0,0);ctx.globalCompositeOperation='screen';ctx.globalAlpha=.10+.16*bloom;ctx.filter=`blur(${5+12*bloom}px)`;ctx.drawImage(copy,0,0);ctx.restore();
     }
     return canvas.toDataURL('image/png');
   }
@@ -230,13 +241,42 @@
     toggle.textContent=showStudies?'Hide experimental studies':'Explore experimental studies';
   };
 
+  function installMaterialControls(){
+    if(document.getElementById('silkMaterialControls'))return;
+    const variation=$('variation');
+    const section=variation?.closest('.panel-section');
+    if(!section)return;
+    const wrap=document.createElement('div');
+    wrap.id='silkMaterialControls';wrap.className='silk-material-controls';
+    const rows=[
+      ['silkFibreDensity','Fibre density',12,96,1,state.silkFibreDensity,v=>String(Math.round(v))],
+      ['silkThickness','Ribbon thickness',45,180,1,state.silkThickness,v=>`${Math.round(v)}%`],
+      ['silkRipple','Ripple strength',25,200,1,state.silkRipple,v=>`${Math.round(v)}%`],
+      ['silkFray','Texture / fray',0,180,1,state.silkFray,v=>`${Math.round(v)}%`],
+      ['silkBloom','Bloom',0,180,1,state.silkBloom,v=>`${Math.round(v)}%`],
+    ];
+    wrap.innerHTML=`<div class="silk-controls-title"><strong>Motion Silks material</strong><span>Scales how measured motion is expressed; sensor values are unchanged.</span></div>`+rows.map(([id,label,min,max,step,value,fmt])=>`<label class="control-row compact"><div><span>${label}</span><output id="${id}Out">${fmt(value)}</output></div><input id="${id}" type="range" min="${min}" max="${max}" step="${step}" value="${value}"></label>`).join('');
+    variation.insertAdjacentElement('beforebegin',wrap);
+    rows.forEach(([id,,min,max,,value,fmt])=>{
+      const input=$(id),out=$(`${id}Out`);
+      input.addEventListener('input',e=>{
+        const v=clamp(+e.target.value,+min,+max);state[id]=v;out.textContent=fmt(v);
+        if(state.style===STYLE_ID)render();
+      });
+    });
+  }
+
   const style=document.createElement('style');
   style.textContent=`
     .flagship-style{position:relative;border-color:#617d98!important;box-shadow:0 0 0 1px #617d9838 inset}
     .flagship-badge{display:inline-block;margin:0 0 7px;padding:3px 6px;border-radius:999px;background:#dfe9f3;color:#111821;font:700 7px Inter,sans-serif;letter-spacing:.14em}
     .study-toggle{margin-top:9px;width:100%}
+    .silk-material-controls{margin:15px 0 12px;padding:12px;border:1px solid #22303e;border-radius:12px;background:#0a1016}
+    .silk-controls-title{display:grid;gap:3px;margin-bottom:8px}.silk-controls-title strong{font:600 11px Manrope,sans-serif;color:#dce7f1}.silk-controls-title span{font-size:8px;line-height:1.4;color:#6f7e8e}
+    .silk-material-controls .control-row{margin:8px 0 0}
   `;
   document.head.appendChild(style);
   buildStyleGallery();
+  installMaterialControls();
   if(state.time.length)render();
 })();

@@ -9,15 +9,16 @@
       title.textContent=who?`${who} · ${design}`:design;
     }
     const intro=document.getElementById('storyIntro');
-    if(intro)intro.textContent='Your outward and return journeys become two silky loops. The easiest way to read them is like a familiar signal plot wrapped into a circle.';
+    if(intro)intro.textContent='Your outward and return journeys become two silky loops. The recording now sets not only the changing line, but much of the material behaviour around it.';
     const rules=document.getElementById('storyRules');
     if(rules)rules.innerHTML=`
-      <article class="story-rule"><span>3</span><div><strong>Around the loop is time</strong><p>Start at the top and travel around the loop: you are moving through the selected passage from earlier to later, just as you would move left-to-right across a normal graph.</p></div></article>
-      <article class="story-rule"><span>4</span><div><strong>The changing edge is your movement</strong><p>When the recorded handlebar motion changes more strongly, the ribbon moves farther away from its smooth underlying circle. Calmer sections sit closer to it.</p></div></article>
-      <article class="story-rule"><span>5</span><div><strong>The fibres show local texture</strong><p>The bright centre trace carries the main measured shape. The surrounding fibres make that trace feel tactile; where local motion is less even, they spread and shimmer more.</p></div></article>
-      <article class="story-rule"><span>6</span><div><strong>Bright points mark stronger impulses</strong><p>Small glints appear where the selected recording contains unusually strong local changes. They stay at the same position in time around the loop.</p></div></article>`;
+      <article class="story-rule"><span>3</span><div><strong>Around the loop is time</strong><p>Start at the top and travel around the loop: you are moving through the selected passage from earlier to later, like a normal signal plot wrapped into a circle.</p></div></article>
+      <article class="story-rule"><span>4</span><div><strong>The changing shape is measured motion</strong><p>The recorded handlebar acceleration changes the centreline. Stronger movement pushes the ribbon farther from its underlying loop, while quieter sections stay closer.</p></div></article>
+      <article class="story-rule"><span>5</span><div><strong>The recording also sets the material baseline</strong><p>Overall motion energy helps set loop size and ribbon width; repeating-motion coherence helps set ripple strength; local roughness affects fray; stronger impulses and fast vibration contribute to bloom and highlights.</p></div></article>
+      <article class="story-rule"><span>6</span><div><strong>Outward and return remain separate</strong><p>The two selected journeys are analysed independently, so their size, width, ripple and orientation can differ. Their relative motion energy also influences how the two loops sit together.</p></div></article>
+      <article class="story-rule"><span>7</span><div><strong>Bright flares stay tied to real events</strong><p>Small glints appear at stronger local changes in the recording and stay at their true position in time around the loop.</p></div></article>`;
     const styling=document.getElementById('storyStyling');
-    if(styling)styling.textContent='The decision to wrap time into a loop, the number of silky strands, their exact spacing, glow, overall loop placement and palette are artistic choices. The changing centreline, local ribbon texture and impulse positions come from the selected recording.';
+    if(styling)styling.textContent='DATA-AUTHORED: centreline shape, local width, loop radius, gentle loop rotation/positioning, fibre-density baseline, ripple emphasis, fray, opacity and bloom are derived from the selected recording. ART DIRECTION: wrapping time into loops, palette, colour-spread mode, background, typography and small maker trims around the calculated baseline. The handlebar sensor measures gait indirectly through the participant/bicycle coupling, so this is an artistic motion signature rather than a clinical gait measurement.';
   }
 
   document.addEventListener('click',e=>{
